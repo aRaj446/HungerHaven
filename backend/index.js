@@ -1,19 +1,17 @@
-
-global.foodData = require('./db')(function call(err, data, CatData) {
-  // console.log(data)
-  if(err) console.log(err);
-  global.foodData = data;
-  global.foodCategory = CatData;
-})
+require('dotenv').config()
 
 const express = require('express')
+const connectToMongo = require('./db')
+
 const app = express()
-const port = 5000
+const port = process.env.PORT || 5000
+const clientOrigin = process.env.CLIENT_ORIGIN || 'http://localhost:3000'
+
 app.use((req, res, next) => {
-  res.setHeader("Access-Control-Allow-Origin", "http://localhost:3000");
+  res.setHeader('Access-Control-Allow-Origin', clientOrigin);
   res.header(
-    "Access-Control-Allow-Headers",
-    "Origin, X-Requested-With, Content-Type, Accept"
+    'Access-Control-Allow-Headers',
+    'Origin, X-Requested-With, Content-Type, Accept, auth-token'
   );
   next();
 });
@@ -25,7 +23,16 @@ app.get('/', (req, res) => {
 
 app.use('/api/auth', require('./Routes/Auth'));
 
-app.listen(port, () => {
-  console.log(`Example app listening on http://localhost:${port}`)
-})
+connectToMongo()
+  .then(({ foodData, foodCategory }) => {
+    global.foodData = foodData;
+    global.foodCategory = foodCategory;
 
+    app.listen(port, () => {
+      console.log(`Example app listening on http://localhost:${port}`)
+    })
+  })
+  .catch((err) => {
+    console.error('Failed to connect to MongoDB:', err.message)
+    process.exit(1)
+  })

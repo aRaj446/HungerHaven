@@ -1,28 +1,23 @@
 const mongoose = require('mongoose')
-// const mongoDbClient = require("mongodb").MongoClient
-//const mongoURI = 'mongodb+srv://gofood:akshayranjan446@cluster0.eej00qe.mongodb.net/gofoodmern?retryWrites=true&w=majority' // Customer change url to your db you created in atlas
-const mongoURI = 'mongodb://gofood:akshayranjan446@ac-mamhzml-shard-00-00.eej00qe.mongodb.net:27017,ac-mamhzml-shard-00-01.eej00qe.mongodb.net:27017,ac-mamhzml-shard-00-02.eej00qe.mongodb.net:27017/gofoodmern?ssl=true&replicaSet=atlas-pw4zsc-shard-0&authSource=admin&retryWrites=true&w=majority' // Customer change url to your db you created in atlas
 
-// mongodb://<username>:<password>@merncluster-shard-00-00.d1d4z.mongodb.net:27017,merncluster-shard-00-01.d1d4z.mongodb.net:27017,merncluster-shard-00-02.d1d4z.mongodb.net:27017/?ssl=true&replicaSet=atlas-eusy5p-shard-0&authSource=admin&retryWrites=true&w=majority
-module.exports = function (callback) {
-    mongoose.set("strictQuery", false)
-    mongoose.connect(mongoURI, { useNewUrlParser: true }, async (err, result) => {
-        // mongoDbClient.connect(mongoURI, { useNewUrlParser: true }, async(err, result) => {
-        if (err) console.log("---" + err)
-        else {
-            // var database =
-            console.log("connected to mongo")
-            const foodCollection = await mongoose.connection.db.collection("food_items");
-            foodCollection.find({}).toArray(async function (err, data) {
-                const categoryCollection = await mongoose.connection.db.collection("foodCategory"); 
-                categoryCollection.find({}).toArray(async function (err, Catdata) {
-                    callback(err, data, Catdata);
-                })
-            });
-            // listCollections({name: 'food_items'}).toArray(function (err, database) {
-            // });
-            //     module.exports.Collection = database;
-            // });
-        }
-    })
+const mongoURI = process.env.MONGO_URI
+
+module.exports = async function connectToMongo() {
+    if (!mongoURI) {
+        throw new Error('MONGO_URI is not set. Please define it in backend/.env')
+    }
+
+    mongoose.set('strictQuery', false)
+    await mongoose.connect(mongoURI)
+    console.log('Connected to MongoDB')
+
+    const foodCollection = mongoose.connection.db.collection('food_items')
+    const categoryCollection = mongoose.connection.db.collection('foodCategory')
+
+    const [foodData, foodCategory] = await Promise.all([
+        foodCollection.find({}).toArray(),
+        categoryCollection.find({}).toArray()
+    ])
+
+    return { foodData, foodCategory }
 };
