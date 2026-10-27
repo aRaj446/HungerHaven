@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongo-service
+  namespace: hungerhaven
+spec:
+  selector:
+    app: mongo
+  ports:
+    - protocol: TCP
+      port: 27017
+      targetPort: 27017
+  # ClusterIP (default) - only reachable from inside the cluster, which is
+  # correct since the database should never be exposed externally.
+  type: ClusterIP
