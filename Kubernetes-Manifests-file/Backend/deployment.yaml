@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-deployment
+  namespace: hungerhaven
+  labels:
+    app: backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: backend
+          # Placeholder - replace with your actual ECR image URI, e.g.:
+          # <account-id>.dkr.ecr.<region>.amazonaws.com/hungerhaven-backend:latest
+          image: <ECR_URI>/hungerhaven-backend:latest
+          ports:
+            - containerPort: 5000
+          env:
+            - name: PORT
+              value: "5000"
+            # Same-origin via the Ingress/ALB, so the frontend and backend
+            # are served from the same host. Update if that changes.
+            - name: CLIENT_ORIGIN
+              value: "http://hungerhaven.local"
+            - name: MONGO_URI
+              valueFrom:
+                secretKeyRef:
+                  name: backend-secret
+                  key: MONGO_URI
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: backend-secret
+                  key: JWT_SECRET
+            - name: OPENCAGE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: backend-secret
+                  key: OPENCAGE_API_KEY
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 5000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 5000
+            initialDelaySeconds: 15
+            periodSeconds: 20
